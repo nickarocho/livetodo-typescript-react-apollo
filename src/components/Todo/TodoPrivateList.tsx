@@ -1,6 +1,18 @@
 import React, { Fragment, useState } from "react";
+import gql from "graphql-tag";
+import { useQuery } from "@apollo/react-hooks";
 import TodoItem from "./TodoItem";
 import TodoFilters from "./TodoFilters";
+
+const GET_MY_TODOS = gql`
+  query getMyTodos {
+    todos(where: { is_public: { _eq: false } }, order_by: { created_at: desc }) {
+      id
+      title
+      is_completed
+    }
+  }
+`;
 
 type Todo = {
   id: number,
@@ -11,19 +23,7 @@ type Todo = {
 const TodoPrivateList = () => {
 
   const [filter, setFilter] = useState<string>("all");
-
-  const todos = [
-    {
-      id: 1,
-      title: "This is private todo 1",
-      is_completed: true
-    },
-    {
-      id: 2,
-      title: "This is private todo 2",
-      is_completed: false
-    }
-  ];
+  const {loading, error, data} = useQuery(GET_MY_TODOS);
 
   const filterResults = (filter: string): void => {
     setFilter(filter);
@@ -32,11 +32,18 @@ const TodoPrivateList = () => {
   const clearCompleted = () => {
   };
 
-  let filteredTodos = todos;
+  if (loading) {
+    return(<div>Loading...</div>);
+  }
+  if (error || !data) {
+    return (<div>Error...</div>);
+  }
+
+  let filteredTodos = data.todos;
   if (filter === "active") {
-    filteredTodos = todos.filter((todo: Todo) => todo.is_completed !== true);
+    filteredTodos = data.todos.filter((todo: Todo) => todo.is_completed !== true);
   } else if (filter === "completed") {
-    filteredTodos = todos.filter((todo: Todo) => todo.is_completed === true);
+    filteredTodos = data.todos.filter((todo: Todo) => todo.is_completed === true);
   }
 
   const todoList = filteredTodos.map((todo: Todo, index: number) => (
